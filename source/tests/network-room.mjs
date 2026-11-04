@@ -1,0 +1,27 @@
+import {chromium} from 'playwright';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const b=await chromium.launch({headless:true,args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader']});
+const c=await b.newContext({viewport:{width:360,height:240}});
+await c.route('**/vendor/peerjs.min.js',r=>r.fulfill({contentType:'text/javascript',body:fs.readFileSync(new URL('./fake-peer.js', import.meta.url),'utf8')}));
+await c.route('**/src/main.js*',async r=>{const response=await r.fetch();let body=await response.text();body=body.replace('renderer.render(scene, camera);','void scene;');await r.fulfill({response,body});});
+const a=await c.newPage(), d=await c.newPage(); const errors=[];
+for(const [n,p] of [['host',a],['guest',d]])p.on('pageerror',e=>errors.push(n+': '+e.stack));
+await a.goto('http://127.0.0.1:5420/?mode=team&map=bowl&bowlart=0&bots=0');
+await a.waitForFunction(()=>window.__game?.online()?.slot===1,null,{timeout:60000});
+await d.goto(a.url());
+await d.waitForFunction(()=>window.__game?.online()?.slot===2,null,{timeout:60000});
+await a.waitForTimeout(1000);
+
+await a.locator('.start-team').click();
+await a.evaluate(()=>__game.step(480));
+await d.waitForFunction(()=>__game.state().round.phase === "active",null,{timeout:45000});
+await a.evaluate(()=>{__game.setPosition(35,0.9,0);__game.setLook(0,0)});
+await d.evaluate(()=>__game.setPosition(35,0.9,-2));
+await a.waitForTimeout(6000);
+await a.evaluate(()=>__game.press("melee"));
+await a.waitForTimeout(300);
+const popup = await a.locator('.popup').allTextContents();
+await a.waitForTimeout(2500);
+const results=await Promise.all([a,d].map(p=>p.evaluate(()=>({online:{slot:__game.online().slot,count:__game.online().all.length,host:__game.online().isHost,started:__game.online().started},round:__game.state().round,hp:__game.state().player.hp,bots:__game.state().bots.length,remote:__game.online().all.map(x=>({p:x.pos.toArray(),hp:x.hp}))}))));
+assert.equal(results[0].online.started,true); assert.equal(results[1].online.started,true); assert.equal(results[0].round.phase,'active'); assert.equal(results[1].round.phase,'active'); assert.equal(results[0].bots,0); assert.equal(results[1].bots,0); assert.equal(results[1].hp,120); assert.ok(popup.includes('30'), JSON.stringify(popup)); assert.deepEqual(errors,[]); console.log('Two-player team round and melee damage passed'); await b.close();

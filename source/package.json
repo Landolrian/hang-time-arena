@@ -1,0 +1,1 @@
+{"name":"grapple-game","version":"1.0.0","type":"module","scripts":{"dev":"vite --port 5420 --strictPort","test":"node tests/smoke.mjs && node tests/whip-mantle.mjs && node tests/charges.mjs","build":"vite build"},"dependencies":{"three":"^0.183.2"},"devDependencies":{"playwright":"^1.58.2","vite":"^7.3.1"}}

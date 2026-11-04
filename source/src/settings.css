@@ -1,0 +1,39 @@
+/* Settings: the anim viewer's look. Plum panel, Barlow Condensed, yellow section heads,
+   segmented pills with a magenta "on" state, chrome resume button. */
+#settings-menu { position: fixed; inset: 0; z-index: 1000; background: radial-gradient(ellipse at 50% 40%, #2a1440cc, #0c0a14ee 75%); display: grid; place-items: center; letter-spacing: .04em; color: #fff4e0; }
+#settings-menu[hidden] { display: none; }
+.settings-card { width: min(960px, 95vw); max-height: 94vh; display: flex; flex-direction: column; background: #15111f; border: 2px solid #c9cfd9; border-radius: 12px;
+  box-shadow: 0 0 0 2px #120e18, 0 6px 0 2px #120e18, 0 18px 50px #0c0a14cc; overflow: hidden; }
+.settings-card header, .settings-card footer { padding: 12px 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #1d1828; }
+.settings-card header { border-bottom: 1px solid #2c2a36; }
+.settings-card footer { border-top: 1px solid #2c2a36; }
+.settings-brand { display: flex; align-items: baseline; gap: 10px; }
+.settings-brand b { font: 400 28px/1 Shrikhand, cursive; color: #fff4e0; text-shadow: 2px 2px 0 #ff3da8; }
+.settings-card h1 { margin: 0; font: italic 700 26px/1 "Barlow Condensed", sans-serif; letter-spacing: .08em; color: #fff4e0; }
+.settings-card h1::before { content: "·"; margin-right: 10px; color: #8f8d99; }
+.settings-card h2 { margin: 16px 0 4px; font: italic 700 14px "Barlow Condensed", sans-serif; letter-spacing: .2em; color: #ffe14d; }
+.settings-card p, .settings-hint { color: #a9a3b8; font-size: 14px; }
+.settings-card p { margin: 0 0 8px; line-height: 1.35; }
+.settings-body { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; padding: 4px 22px 18px; overflow-y: auto; }
+.settings-row, .binding-row { min-height: 34px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #ffffff12; font-size: 16px; }
+.settings-row > span, .binding-row > span { flex: 1; }
+.settings-card button, .settings-card input[type=number] { color: #fff4e0; background: #221c30; border: 1px solid #2c2a36; border-radius: 6px; padding: 4px 9px; font: 600 15px "Barlow Condensed", sans-serif; letter-spacing: .04em; }
+.settings-card button { cursor: pointer; }
+.settings-card button:hover, .settings-card button:focus-visible { background: #2e2540; outline: none; }
+#settings-resume { padding: 6px 20px; border: 0; border-radius: 7px; background: linear-gradient(180deg, #f4f6fa, #c9cfd9 45%, #8f98a8 55%, #dfe3ea); color: #1b1220;
+  font: italic 700 18px "Barlow Condensed", sans-serif; letter-spacing: .2em; box-shadow: 0 3px 0 #120e18; }
+#settings-resume:hover, #settings-resume:focus-visible { background: linear-gradient(180deg, #fff, #dfe3ea 45%, #a9b1bf 55%, #eef0f4); }
+#settings-reset { font: italic 700 14px "Barlow Condensed", sans-serif; letter-spacing: .14em; }
+.settings-card input[type=range] { width: 110px; accent-color: #ff3da8; }
+.settings-card input[type=number] { width: 64px; }
+.settings-card input[type=checkbox] { width: 18px; height: 18px; accent-color: #ff3da8; }
+.settings-pills { display: inline-flex; background: #1d1828; border: 1px solid #2c2a36; border-radius: 8px; overflow: hidden; }
+.settings-card .settings-pills button { border: 0; border-radius: 0; background: transparent; padding: 4px 12px; font: italic 700 14px "Barlow Condensed", sans-serif; letter-spacing: .1em; color: #a9a3b8; }
+.settings-card .settings-pills button.on { background: #ff3da8; color: #fff; }
+.binding-row button { min-width: 130px; max-width: 220px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.binding-row .conflict { color: #ffe14d; border-color: #ffe14d; }
+.settings-hint kbd { font-size: 12px; }
+#fps-counter { position: fixed; left: 24px; top: 66px; font: italic 700 13px "Barlow Condensed", sans-serif; letter-spacing: .1em; color: #a9a3b8; text-shadow: 0 1px 0 #120e18; pointer-events: none; }
+@media (max-width: 650px) { .settings-body { grid-template-columns: 1fr; gap: 0; } }
+
+#settings-menu input[type=checkbox] { width: auto; }

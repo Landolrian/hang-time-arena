@@ -1,0 +1,50 @@
+@font-face { font-family: "Shrikhand"; src: url(/assets/looktest/fonts/Shrikhand-Regular.ttf); }
+@font-face { font-family: "BarlowC"; src: url(/assets/looktest/fonts/BarlowCondensed-BoldItalic.ttf); font-style: italic; font-weight: 700; }
+@font-face { font-family: "BarlowCS"; src: url(/assets/looktest/fonts/BarlowCondensed-SemiBold.ttf); font-weight: 600; }
+:root { --chrome-hi: #f4f6fa; --chrome-lo: #8f98a8; --ink: #1b1220; --hot: #ffe14d; --mag: #ff3da8; }
+html, body { margin: 0; height: 100%; background: #0c0a14; overflow: hidden; }
+#view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+#hud { position: fixed; inset: 0; pointer-events: none; font-family: "BarlowC", sans-serif; color: #fff; }
+.hud-tl { position: absolute; left: 22px; top: 14px; display: flex; align-items: flex-start; gap: 6px; }
+.hud-logo { width: 190px; filter: drop-shadow(0 3px 0 rgba(0,0,0,0.35)); }
+.live { margin-top: 18px; font: italic 700 18px "BarlowC"; letter-spacing: 2px; padding: 2px 10px 1px 8px; background: #d4142a; border: 2px solid #fff4e0; border-radius: 4px; box-shadow: 0 2px 0 var(--ink); display: flex; align-items: center; gap: 6px; }
+.live .dot { width: 8px; height: 8px; border-radius: 50%; background: #fff4e0; }
+
+.hud-score { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); display: flex; align-items: stretch; gap: 0; filter: drop-shadow(0 4px 0 rgba(0,0,0,0.45)); }
+.team, .clock { border: 3px solid var(--ink); display: flex; flex-direction: column; align-items: center; padding: 4px 12px 8px; }
+.team { background: linear-gradient(#2a2232, #120e18); min-width: 120px; }
+.team.red { border-radius: 14px 0 0 14px; box-shadow: inset 0 0 0 3px #e8242c; }
+.team.blue { border-radius: 0 14px 14px 0; box-shadow: inset 0 0 0 3px #1f5bff; }
+.tname { font: italic 700 20px "BarlowC"; letter-spacing: 3px; padding: 0 12px; margin-bottom: 4px; border-radius: 3px; }
+.red .tname { background: #e8242c; }
+.blue .tname { background: #1f5bff; }
+.clock { background: linear-gradient(var(--chrome-hi), var(--chrome-lo) 48%, #5d6b86 52%, #dfe5ee); border-left: 0; border-right: 0; padding: 6px 10px; justify-content: center; }
+.clock-n { background: #120e18; border-radius: 6px; padding: 5px 7px 3px; border: 2px solid var(--ink); }
+.clock .bulbs { width: 60px; height: auto; display: block; }
+.round { font: italic 700 13px "BarlowC"; color: var(--ink); letter-spacing: 2px; margin-top: 3px; }
+.board .bulbs { width: 82px; height: auto; display: block; }
+
+.hud-ratings { position: absolute; right: 22px; top: 14px; display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 4px 0 rgba(0,0,0,0.45)); }
+.hud-ratings svg { width: 190px; height: auto; }
+.vu-l { font: italic 700 13px "BarlowC"; fill: #2b2238; letter-spacing: 1px; }
+.vu-hot { fill: #e0144a; }
+.ratings-cap { margin-top: -4px; display: flex; align-items: center; gap: 6px; background: var(--mag); border: 3px solid var(--ink); border-radius: 0 0 10px 10px; padding: 2px 12px 3px; }
+.ratings-cap span { font: italic 700 17px "BarlowC"; letter-spacing: 2px; }
+.ratings-cap b { font: 26px/1 "Shrikhand"; color: var(--hot); -webkit-text-stroke: 1px var(--ink); }
+.ratings-cap i { font: italic 700 12px "BarlowC"; letter-spacing: 1px; opacity: .9; }
+
+.hud-lower { position: absolute; left: 6%; bottom: 9%; display: flex; align-items: stretch; filter: drop-shadow(0 4px 0 rgba(0,0,0,0.4)); transform: skewX(-12deg); }
+.lt-stripes { display: flex; gap: 4px; margin-right: 6px; }
+.lt-stripes i { width: 9px; background: var(--hot); border: 2px solid var(--ink); }
+.lt-stripes i:nth-child(2) { background: #ff8a3d; }
+.lt-stripes i:nth-child(3) { background: var(--mag); }
+.lt-body { background: linear-gradient(90deg, #1b1220 0%, #2a1f3a 70%, rgba(42,31,58,0.9)); border: 3px solid var(--ink); border-top: 4px solid var(--hot); padding: 4px 26px 6px 16px; }
+.lt-name { font: italic 700 30px/1.05 "BarlowC"; letter-spacing: 2px; color: #fff4e0; transform: skewX(12deg); }
+.lt-role { font: 600 17px "BarlowCS"; color: var(--hot); letter-spacing: 1px; transform: skewX(12deg); }
+
+.hud-bug { position: absolute; right: 26px; bottom: 22px; display: none; align-items: center; gap: 6px; opacity: 0.62; }
+.bug-ch { font: 34px/1 "Shrikhand"; color: #fff; width: 44px; height: 44px; border: 3px solid #fff; border-radius: 50%; display: grid; place-items: center; padding-top: 3px; box-sizing: border-box; }
+.bug-txt { font: italic 700 14px "BarlowC"; letter-spacing: 3px; }
+.style-b .hud-bug { display: flex; }
+.hud-help { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); font: 600 12px "BarlowCS"; color: rgba(255,255,255,0.4); letter-spacing: 1px; }
+.shot .hud-help { display: none; }
