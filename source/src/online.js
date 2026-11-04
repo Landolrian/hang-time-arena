@@ -11,7 +11,7 @@ export function createOnline(scene, onHit, onKO, options = {}) {
   params.set('room', room); history.replaceState(null, '', `${location.pathname}?${params}`);
   const hostId = `hangtime-fight-${room}`;
   const remotes = new Map(), connections = new Map();
-  let peer, host = false, me = '', nextSlot = 1, assigned = false, status = 'Connecting…', started = false, fillBots = options.bots !== false;
+  let peer, host = false, me = '', nextSlot = 1, assigned = false, status = 'Connecting…', started = false, full = false, fillBots = options.bots !== false;
   const panel = document.createElement('div'); panel.className = 'online-panel' + (teamMode ? ' team-panel' : '');
   panel.innerHTML = `<b>HANG TIME! <span>${teamMode ? "BREAKFAST BOWL · 4v4" : "FREE FOR ALL"}</span></b><div class="online-room">ROOM <strong>${room}</strong> <button class="copy">Copy invite</button> <button class="mode">${teamMode ? "Free for all" : "4v4 teams"}</button></div><div class="online-status">Connecting…</div><div class="online-score">Waiting for players</div>${teamMode ? `<div class="team-controls"><label><input type="checkbox" ${fillBots ? "checked" : ""}> Fill empty slots with bots</label> <button class="start-team">Start match</button></div>` : ""}<small>Share the invite link · ${teamMode ? "1–8" : "2–4"} players · mouse & keyboard</small>`;
   document.body.append(panel);
@@ -62,8 +62,8 @@ export function createOnline(scene, onHit, onKO, options = {}) {
         broadcast({t:'join',id:c.peer,slot:c.slot},c); addRemote(c.peer,c.slot); setStatus(`${remotes.size+1} / ${capacity} fighters connected`);
       } else { connections.set('host',c); setStatus('Connected · waiting for room'); if(teamMode){panel.querySelector('.start-team').disabled=true;panel.querySelector('.team-controls input').disabled=true;} }
     });
-    c.on('data', m => { if(m?.t==='full'){setStatus(`This room is full (${capacity} players).`);c.close();return;} receive(m,c); });
-    c.on('close',()=>{if(host){connections.delete(c.peer);remove(c.peer);broadcast({t:'leave',id:c.peer});setStatus(`${remotes.size+1} / ${capacity} fighters connected`);}else{connections.delete('host');setStatus('Host disconnected. Refresh to reconnect.');}});
+    c.on('data', m => { if(m?.t==='full'){full=true;setStatus(`This room is full (${capacity} players).`);c.close();return;} receive(m,c); });
+    c.on('close',()=>{if(host){connections.delete(c.peer);remove(c.peer);broadcast({t:'leave',id:c.peer});setStatus(`${remotes.size+1} / ${capacity} fighters connected`);}else{connections.delete('host');if(!full)setStatus('Host disconnected. Refresh to reconnect.');}});
   }
   function start(asHost) {
     host=asHost; peer = new window.Peer(asHost ? hostId : undefined, {debug:0});
