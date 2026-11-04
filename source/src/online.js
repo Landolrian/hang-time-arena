@@ -55,12 +55,13 @@ export function createOnline(scene, onHit, onKO, options = {}) {
   }
   function attach(c) {
     c.on('open', () => {
+      if (full) { c.close(); return; }
       if(host) {
         if(connections.size >= capacity - 1) { send(c,{t:'full'}); setTimeout(()=>c.close(),200); return; }
         const used = new Set([1,...Array.from(connections.values(),x=>x.slot)]); c.slot=Array.from({length:capacity-1},(_,i)=>i+2).find(n=>!used.has(n)); c.remoteId=c.peer; connections.set(c.peer,c);
         send(c,{t:'welcome',id:c.peer,slot:c.slot,started,bots:fillBots,players:[{id:me,slot:1},...Array.from(connections.values()).filter(x=>x!==c).map(x=>({id:x.remoteId,slot:x.slot}))]});
         broadcast({t:'join',id:c.peer,slot:c.slot},c); addRemote(c.peer,c.slot); setStatus(`${remotes.size+1} / ${capacity} fighters connected`);
-      } else { connections.set('host',c); setStatus('Connected · waiting for room'); if(teamMode){panel.querySelector('.start-team').disabled=true;panel.querySelector('.team-controls input').disabled=true;} }
+      } else { connections.set('host',c); setStatus(assigned ? `You are P${nextSlot} · connected` : 'Connected · waiting for room'); if(teamMode){panel.querySelector('.start-team').disabled=true;panel.querySelector('.team-controls input').disabled=true;} }
     });
     c.on('data', m => { if(m?.t==='full'){full=true;setStatus(`This room is full (${capacity} players).`);c.close();return;} receive(m,c); });
     c.on('close',()=>{if(host){connections.delete(c.peer);remove(c.peer);broadcast({t:'leave',id:c.peer});setStatus(`${remotes.size+1} / ${capacity} fighters connected`);}else{connections.delete('host');if(!full)setStatus('Host disconnected. Refresh to reconnect.');}});
