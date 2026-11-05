@@ -42,10 +42,12 @@ export function createSettings(canvas, onChange) {
   const overlay = document.createElement('div');
   overlay.id = 'settings-menu';
   overlay.hidden = true;
-  overlay.innerHTML = `<div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="settings-title"><header><div class="settings-brand"><b>Hang Time!</b><h1 id="settings-title">Settings</h1></div><button id="settings-resume">RESUME</button></header><div class="settings-body"><section id="settings-options"></section><section><h2>CONTROLS</h2><p>Click a binding, then press a key or mouse button. Esc cancels.</p><div id="settings-bindings"></div></section></div><footer><span class="settings-hint">Game paused · press <kbd>ESC</kbd> or RESUME to play</span><button id="settings-reset">RESET TO DEFAULTS</button></footer></div>`;
+  overlay.innerHTML = `<div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="settings-title"><header><div class="settings-brand"><b>Hang Time!</b><h1 id="settings-title">Settings</h1></div><button id="settings-resume">RESUME</button></header><div class="settings-room" hidden></div><div class="settings-body"><section id="settings-options"></section><section><h2>CONTROLS</h2><p>Click a binding, then press a key or mouse button. Esc cancels.</p><div id="settings-bindings"></div></section></div><footer><span class="settings-hint">Game paused · press <kbd>ESC</kbd> or RESUME to play</span><button id="settings-reset">RESET TO DEFAULTS</button></footer></div>`;
   document.body.append(overlay);
   const options = overlay.querySelector('#settings-options');
   const bindings = overlay.querySelector('#settings-bindings');
+  const roomSlot = overlay.querySelector('.settings-room');
+  const roomPanel = document.querySelector('.online-panel');
   let started = false, capturing = null;
   const fields = [
     ['LOOK', 'heading'], ['sensitivity', 'Mouse sensitivity', 'number', 0.1, 5, 0.01], ['invertY', 'Invert Y', 'checkbox'], ['heldSensitivity', 'Held-button sensitivity', 'number', 0.01, 2, 0.01],
@@ -117,6 +119,11 @@ export function createSettings(canvas, onChange) {
   document.addEventListener('pointerlockchange', () => {
     if (document.pointerLockElement === canvas) started = true;
     overlay.hidden = !started || document.pointerLockElement === canvas;
+    if (roomPanel) {
+      roomSlot.hidden = overlay.hidden;
+      if (overlay.hidden) document.body.append(roomPanel);
+      else roomSlot.append(roomPanel);
+    }
     if (overlay.hidden) capturing = null;
   });
   const fps = document.createElement('div'); fps.id = 'fps-counter'; document.body.append(fps);

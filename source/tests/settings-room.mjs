@@ -1,0 +1,22 @@
+import {chromium} from 'playwright';
+import assert from 'node:assert/strict';
+const browser=await chromium.launch({headless:true,args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader']});
+const p=await browser.newPage({viewport:{width:1100,height:800}});const errors=[];p.on('pageerror',e=>errors.push(e.message));
+await p.route('**/vendor/peerjs.min.js',r=>r.fulfill({contentType:'text/javascript',body:"window.Peer=class{constructor(id){this.h={};setTimeout(()=>this.h.open?.(id),30)}on(n,f){this.h[n]=f}destroy(){}}"}));
+await p.goto('http://127.0.0.1:5420/');
+await p.waitForSelector('.online-panel .mode');
+async function openSettings(){await p.evaluate(()=>{const canvas=document.querySelector('#app canvas'); Object.defineProperty(document,'pointerLockElement',{configurable:true,value:canvas});document.dispatchEvent(new Event('pointerlockchange'));Object.defineProperty(document,'pointerLockElement',{configurable:true,value:null});document.dispatchEvent(new Event('pointerlockchange'));});await p.waitForSelector('#settings-menu:not([hidden])');}
+await openSettings();
+assert.equal(await p.locator('#settings-menu .online-panel .mode').count(),1);
+await p.locator('#settings-menu .mode').click();
+await p.waitForURL('**/?*mode=team*');
+await p.waitForSelector('.start-team');
+await openSettings();
+assert.equal(await p.locator('#settings-menu .start-team').isVisible(),true);
+await p.locator('#settings-menu .team-controls input').uncheck();
+await p.locator('#settings-menu .start-team').click();
+assert.equal(await p.locator('#settings-menu .team-controls').isHidden(),true);
+assert.equal(await p.evaluate(()=>window.__game.online().started),true);
+assert.deepEqual(errors,[]);
+console.log('Settings room controls: mode switch, bot option, and start passed');
+await browser.close();

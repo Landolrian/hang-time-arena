@@ -37,3 +37,12 @@
 @media (max-width: 650px) { .settings-body { grid-template-columns: 1fr; gap: 0; } }
 
 #settings-menu input[type=checkbox] { width: auto; }
+
+/* Keep the actual room controls usable while the pointer is released. */
+#settings-menu .settings-room { padding: 8px 22px; background: #21192e; border-bottom: 1px solid #ffffff20; }
+#settings-menu .settings-room[hidden] { display: none; }
+#settings-menu .settings-room .online-panel { position: static; transform: none; width: auto; min-width: 0; max-width: none; padding: 4px; background: transparent; border: 0; box-shadow: none; }
+#settings-menu .settings-room .online-room { margin: 3px 0; }
+#settings-menu .settings-room .online-panel button { color: #17121e; background: #ffdc45; border: 0; font-weight: 800; }
+#settings-menu .settings-room .online-panel button:disabled { opacity: .5; }
+#settings-menu .settings-room .online-panel small { display: none; }
