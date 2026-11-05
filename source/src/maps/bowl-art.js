@@ -64,6 +64,8 @@ export function dressBowl(scene, world, parts) {
   build(scene, world, parts, api).then(
     () => {
       state.ready = true;
+      // With static shadows the first map must be rendered after the art loads.
+      if (state.staticShadows && state.renderer) state.renderer.shadowMap.needsUpdate = true;
     },
     (error) => {
       console.error("Bowl art failed; keeping the grey box", error);
@@ -76,7 +78,7 @@ export function dressBowl(scene, world, parts) {
 function setupRenderer(renderer, state) {
   state.renderer = renderer;
   // debug: ?bowlshadow=off|basic|pcf for performance comparisons
-  const mode = new URLSearchParams(location.search).get("bowlshadow") ?? "pcf";
+  const mode = new URLSearchParams(location.search).get("bowlshadow") ?? "static";
   renderer.shadowMap.enabled = mode !== "off";
   renderer.shadowMap.type = mode === "basic" ? THREE.BasicShadowMap : THREE.PCFShadowMap;
   if (mode === "static") {
@@ -96,21 +98,25 @@ async function build(scene, world, parts, api) {
 
   // ---------- set pieces ----------
   buildTable(art);
-  buildBowl(art);
+  buildBowl(art, world);
   buildBowlRings(art);
   buildBox(art);
   buildToasters(art);
   buildCartons(art);
   buildButter(art);
-  buildSpoon(art);
+  // The reworked bowl uses a narrow bridge rather than the old spoon ramp.
   buildCover(art);
   await buildStudio(art, live);
   buildBackstage(art, live);
   api.updaters.push(...buildShow(scene, art, live, world, parts));
 
   // ---------- hide the grey box (keep it raycastable and solid) ----------
+  const bridgeMaterial = new THREE.MeshStandardMaterial({ color: 0xa5aeb8, metalness: 0.55, roughness: 0.35 });
+  const coverMaterial = new THREE.MeshStandardMaterial({ color: 0xd6c4a4, roughness: 0.8 });
   for (const mesh of world.meshes) {
-    if (mesh === world.podium) mesh.material = new THREE.MeshBasicMaterial({ visible: false, color: mesh.material.color });
+    if (mesh.name === "spoon-bridge" || mesh.name === "bowl-anchor") mesh.material = bridgeMaterial;
+    else if (mesh.name.startsWith("gap-cover-")) mesh.material = coverMaterial;
+    else if (mesh === world.podium) mesh.material = new THREE.MeshBasicMaterial({ visible: false, color: mesh.material.color });
     else if (parts.barriers.some((b) => b.mesh === mesh)) continue;
     else mesh.material = HIDDEN;
   }
@@ -199,7 +205,7 @@ function lights(scene, live) {
   key.position.set(-35, 110, 95);
   key.target.position.set(0, 0, -5);
   key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.mapSize.set(1024, 1024);
   const sc = key.shadow.camera;
   sc.left = -125; sc.right = 125; sc.top = 75; sc.bottom = -75; sc.near = 20; sc.far = 330;
   key.shadow.bias = -0.0008;

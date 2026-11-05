@@ -48,7 +48,27 @@ export function createBowl(scene) {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3)); geometry.setIndex(indices); geometry.computeVertexNormals();
   const bowl = new THREE.Mesh(geometry, grey);
-  bowl.material.side = THREE.DoubleSide; scene.add(bowl); meshes.push(bowl);
+  bowl.material.side = THREE.DoubleSide;
+  // Ray tests run for aiming and every projectile; a lower-resolution copy
+  // preserves the surface shape without checking the full render mesh.
+  const rayVertices = [], rayIndices = [], rayRings = 68, raySegments = 256;
+  for (let i = 0; i <= rayRings; i++) for (let j = 0; j <= raySegments; j++) {
+    const radius = 34 * i / rayRings, angle = 2 * Math.PI * j / raySegments;
+    const x = radius * Math.cos(angle), z = radius * Math.sin(angle);
+    rayVertices.push(x, bowlHeight(x, z), z);
+    if (i && j) { const a = (i-1)*(raySegments+1)+j-1, b = i*(raySegments+1)+j-1; rayIndices.push(a,b,a+1, a+1,b,b+1); }
+  }
+  const rayGeometry = new THREE.BufferGeometry();
+  rayGeometry.setAttribute("position", new THREE.Float32BufferAttribute(rayVertices, 3));
+  rayGeometry.setIndex(rayIndices);
+  const rayProxy = new THREE.Mesh(rayGeometry, grey);
+  bowl.raycast = function(raycaster, hits) {
+    rayProxy.matrixWorld.copy(this.matrixWorld);
+    const first = hits.length;
+    rayProxy.raycast(raycaster, hits);
+    for (let i = first; i < hits.length; i++) hits[i].object = this;
+  };
+  scene.add(bowl); meshes.push(bowl);
   slopes.push({ radial: true, bottom: -6, mesh: bowl });
   // Keep the ground separate from cover and the ring-out floor for coverage checks.
   const groundBoxes = boxes.slice(), groundSlopes = slopes.slice();
@@ -141,7 +161,8 @@ export function createBowl(scene) {
   const barrierMaterial = material(0xc84c4c);
   const barriers = [[-21,0,1,8], [21,0,1,8], [-7,-20,8,1], [7,20,8,1]].map(([x,z,w,d]) => {
     const mesh = box(x,3.5,z,w,2.5,d,barrierMaterial);
-    return { mesh, collision: boxes[boxes.length - 1], x, z, w, d };
+    const collision = boxes[boxes.length - 1]; collision.dynamic = true;
+    return { mesh, collision, x, z, w, d };
   });
   function updateBarriers(progress, team, bodies) {
     barrierMaterial.color.setHex(team === "comets" ? 0x4b75d0 : 0xc84c4c);

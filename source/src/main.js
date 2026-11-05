@@ -19,7 +19,7 @@ const scene = new THREE.Scene(),
     300,
   );
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25));
 renderer.setSize(innerWidth, innerHeight);
 document.querySelector("#app").append(renderer.domElement);
 const params = new URLSearchParams(location.search);
@@ -1487,7 +1487,7 @@ function frame(now) {
       const slots=[online.slot,...online.all.map(p=>p.slot)]; bots.configure(slots, online.botsEnabled);
       if (online.isHost && online.started) { teamSnapshotTime += dt; if(teamSnapshotTime >= .12) { teamSnapshotTime=0; const round={...jackpot,dead:false,tug:{team:null,progress:0}}; online.sendEvent({t:"snapshot",round,slots,bots:online.botsEnabled,actors:bots.all.map(b=>({number:b.number,pos:b.pos.toArray(),vel:b.vel.toArray(),dead:b.dead,status:b.status,hp:b.hp,knockedHp:b.knockedHp,state:b.state,grounded:b.grounded,facing:b.facing.toArray()}))}); } }
     }
-    online.update(dt, player, hook, onlineKills, onlineTeam ? player.status === "eliminated" : respawnTimer > 0);
+    online.update(dt, player, hook, onlineKills, onlineTeam ? player.status === "eliminated" : respawnTimer > 0, camera);
   }
   render(dt);
   requestAnimationFrame(frame);

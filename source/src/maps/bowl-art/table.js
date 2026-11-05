@@ -165,67 +165,46 @@ export function buildTable(root) {
   return out;
 }
 
-export function buildBowl(root) {
-  const out = {};
-  // inner wall: rim apex down to the floor, with a soft fillet at the floor crease
-  const inner = [];
-  for (let r = 22; r >= 8; r -= 0.5) {
-    let y = bowlHeight(r);
-    const d = r - 8;
-    if (d < 4) y += 0.14 * Math.pow(1 - d / 4, 2) * 1.0; // concave fillet, stays within 0.15 m
-    inner.push(new THREE.Vector2(r, y + 0.03));
+export function buildBowl(root, world) {
+  // The arena was reworked with a new curved profile and four diagonal gaps.
+  // Reuse the collision mesh so the surface players see is the one they stand on.
+  const surface = world.slopes.find((s) => s.radial)?.mesh;
+  if (!surface) return {};
+  const geometry = surface.geometry.clone();
+  const position = geometry.getAttribute("position"), uv = new Float32Array(position.count * 2);
+  for (let i = 0; i < position.count; i++) {
+    const x = position.getX(i), z = position.getZ(i);
+    uv[i * 2] = (Math.atan2(z, x) / (2 * Math.PI) + 1) % 1;
+    uv[i * 2 + 1] = Math.hypot(x, z) / 34;
   }
-  inner.push(new THREE.Vector2(7.2, -1.95));
-  const innerTex = P.bowlInner();
-  const innerGeo = lathe(inner, 192);
-  {
-    const uv = innerGeo.attributes.uv;
-    for (let i = 0; i < uv.count; i++) uv.setY(i, 1 - uv.getY(i));
+  geometry.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+  geometry.clearGroups();
+  const segments = 256, innerRings = 88, first = innerRings * segments * 6;
+  geometry.addGroup(0, first, 0);
+  geometry.addGroup(first, geometry.index.count - first, 1);
+  const inner = mat({ map: P.bowlInner(), gloss: 0.16, glossSize: 0.975 });
+  const outer = mat({ map: P.bowlOuter(), gloss: 0.2, glossSize: 0.975 });
+  inner.side = outer.side = THREE.DoubleSide;
+  const bowl = new THREE.Mesh(geometry, [inner, outer]);
+  bowl.receiveShadow = true;
+  root.add(bowl);
+
+  // The lip is broken at the same four openings as the collision surface.
+  const trim = mat({ color: 0xfff4e0, gloss: 0.5, glossSize: 0.9, rim: 0.15 });
+  const gap = Math.asin(5 / 22), arc = Math.PI / 2 - gap * 2;
+  for (let i = 0; i < 4; i++) {
+    const bead = new THREE.Mesh(new THREE.TorusGeometry(22, 0.3, 10, 48, arc), trim);
+    bead.rotation.set(Math.PI / 2, 0, -Math.PI / 4 + gap + i * Math.PI / 2);
+    bead.position.y = 5.95;
+    bead.receiveShadow = true;
+    root.add(bead);
   }
-  const innerMesh = new THREE.Mesh(innerGeo, mat({ map: innerTex, gloss: 0.16, glossSize: 0.975 }));
-  innerMesh.receiveShadow = true;
-  innerMesh.castShadow = false;
-  root.add(innerMesh);
-
-  // outer wall: foot at r=34 up to the rim apex
-  const outerPts = [];
-  for (let r = 34; r >= 22; r -= 0.5) {
-    let y = bowlHeight(r);
-    const d = 34 - r;
-    if (d < 2) y += 0.1 * Math.pow(1 - d / 2, 2);
-    outerPts.push(new THREE.Vector2(r, y + 0.03));
-  }
-  const outerTex = P.bowlOuter();
-  // logos centred on the diagonals (u=0 is +z, the Spoon side)
-  outerTex.offset.x = 0.5 - 0.125 * 4;
-  const outerMesh = new THREE.Mesh(lathe(outerPts, 192), mat({ map: outerTex, gloss: 0.2, glossSize: 0.975 }));
-  outerMesh.receiveShadow = true;
-  outerMesh.castShadow = true;
-  root.add(outerMesh);
-
-  // rolled rim bead, glossy cream glaze
-  const bead = new THREE.Mesh(new THREE.TorusGeometry(22, 0.42, 14, 192), mat({ color: 0xfff4e0, gloss: 0.5, glossSize: 0.9, rim: 0.15 }));
-  bead.rotation.x = Math.PI / 2;
-  bead.position.y = 5.95;
-  bead.castShadow = true;
-  bead.receiveShadow = true;
-  bead.userData.outline = 1.4;
-  root.add(bead);
-  // foot ring where the bowl meets the cloth
-  const foot = new THREE.Mesh(new THREE.TorusGeometry(33.9, 0.22, 8, 192), mat({ color: 0xc98a3a }));
-  foot.rotation.x = Math.PI / 2;
-  foot.position.y = 0.1;
-  root.add(foot);
-
-  // milk pool on the floor
-  const milkGeo = new THREE.CircleGeometry(8.6, 96);
-  milkGeo.rotateX(-Math.PI / 2);
+  const foot = new THREE.Mesh(new THREE.TorusGeometry(33.9, 0.16, 8, 128), mat({ color: 0xc98a3a }));
+  foot.rotation.x = Math.PI / 2; foot.position.y = 0.1; root.add(foot);
+  const milkGeo = new THREE.CircleGeometry(6, 64); milkGeo.rotateX(-Math.PI / 2);
   const milk = new THREE.Mesh(milkGeo, mat({ map: P.milk(), gloss: 0.3, glossSize: 0.96 }));
-  milk.position.y = -1.92;
-  milk.receiveShadow = true;
-  root.add(milk);
-  out.milk = milk;
-  return out;
+  milk.position.y = -1.96; milk.receiveShadow = true; root.add(milk);
+  return {milk};
 }
 
 function skirt() {

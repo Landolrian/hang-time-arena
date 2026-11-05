@@ -77,6 +77,29 @@ export function createWorld(scene) {
   scene.add(light);
   return { boxes, meshes };
 }
+// Most arena colliders never move. Index them by horizontal cell so every
+// physics step only visits nearby boxes; moving barriers are always checked.
+const collisionGrids = new WeakMap();
+const COLLISION_CELL = 16, COLLISION_MARGIN = 2;
+function nearbyBoxes(boxes, x, z, radius) {
+  if (radius > COLLISION_MARGIN) return boxes;
+  let grid = collisionGrids.get(boxes);
+  if (!grid || grid.length !== boxes.length) {
+    grid = {length:boxes.length, cells:new Map(), dynamic:[]};
+    for (const box of boxes) {
+      if (box.dynamic) { grid.dynamic.push(box); continue; }
+      const x0=Math.floor((box.min.x-COLLISION_MARGIN)/COLLISION_CELL), x1=Math.floor((box.max.x+COLLISION_MARGIN)/COLLISION_CELL);
+      const z0=Math.floor((box.min.z-COLLISION_MARGIN)/COLLISION_CELL), z1=Math.floor((box.max.z+COLLISION_MARGIN)/COLLISION_CELL);
+      for(let cx=x0;cx<=x1;cx++) for(let cz=z0;cz<=z1;cz++) {
+        const key=`${cx},${cz}`; let cell=grid.cells.get(key); if(!cell) grid.cells.set(key,cell=[]); cell.push(box);
+      }
+    }
+    collisionGrids.set(boxes,grid);
+  }
+  const local=grid.cells.get(`${Math.floor(x/COLLISION_CELL)},${Math.floor(z/COLLISION_CELL)}`) || [];
+  return grid.dynamic.length ? [...local,...grid.dynamic] : local;
+}
+
 // Resolve the capsule against rounded horizontal corners and the shallowest face.
 export function moveBody(pos, vel, dt, boxes, r = 0.55, half = 0.9, slopes = [], contact = null) {
   let grounded = false;
@@ -92,11 +115,20 @@ export function moveBody(pos, vel, dt, boxes, r = 0.55, half = 0.9, slopes = [],
         if (radius > 34) continue;
         const height = bowlHeight(pos.x, pos.z);
         const normal = bowlNormal(pos.x, pos.z);
-        if (pos.y - half < height && pos.y - half >= height - 0.6 && pos.y + half > slope.bottom && vel.dot(normal) <= 0) {
-          pos.y = height + half + skin;
-          vel.addScaledVector(normal, -vel.dot(normal));
-          grounded = true;
-          if (contact) contact.normal = normal;
+        const feet = pos.y - half;
+        if (feet < height && pos.y + half > slope.bottom) {
+          const previousRadius = Math.hypot(previous.x, previous.z);
+          const previousHeight = previousRadius <= 34 ? bowlHeight(previous.x, previous.z) : 0;
+          // A steep gap edge can rise more than the old 0.6m tolerance in one
+          // substep. Detect that crossing from the previous surface instead.
+          const crossed = previous.y - half >= previousHeight - 0.01;
+          const into = vel.dot(normal);
+          if ((feet >= height - 0.6 && into <= 0) || crossed) {
+            pos.y = height + half + skin;
+            if (into < 0) vel.addScaledVector(normal, -into);
+            grounded = true;
+            if (contact) contact.normal = normal;
+          }
         }
         continue;
       }
@@ -134,7 +166,7 @@ export function moveBody(pos, vel, dt, boxes, r = 0.55, half = 0.9, slopes = [],
     }
     for (let pass = 0; pass < 4; pass++) {
       let resolved = false;
-      for (const b of boxes) {
+      for (const b of nearbyBoxes(boxes, pos.x, pos.z, r)) {
         const vertical = Math.min(pos.y + half - b.min.y, b.max.y - (pos.y - half));
         if (vertical <= 1e-6) continue;
         const x = THREE.MathUtils.clamp(pos.x, b.min.x, b.max.x);
@@ -175,7 +207,7 @@ export function moveBody(pos, vel, dt, boxes, r = 0.55, half = 0.9, slopes = [],
 // Find the nearest side face within reach of the body, including boundary walls.
 export function nearbyWall(pos, boxes, reach = 0.35, r = 0.55, half = 0.9) {
   let best = null;
-  for (const box of boxes) {
+  for (const box of nearbyBoxes(boxes, pos.x, pos.z, r + reach)) {
     if (pos.y + half <= box.min.y || pos.y - half >= box.max.y) continue;
     for (const [axis, other, side] of [["x", "z", -1], ["x", "z", 1], ["z", "x", -1], ["z", "x", 1]]) {
       const face = side < 0 ? box.min[axis] : box.max[axis];

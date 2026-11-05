@@ -74,7 +74,8 @@ export function createOnline(scene, onHit, onKO, options = {}) {
     peer.on('disconnected',()=>setStatus('Connection lost. Refresh to reconnect.'));
   }
   if(window.Peer) start(true); else setStatus('Online play failed to load. Refresh to retry.');
-  let lastSend=0, lastYaw=0;
+  let lastSend=0, lastYaw=0, poseFrame=0;
+  const cameraDirection=new THREE.Vector3(), cameraDelta=new THREE.Vector3();
   return {
     get all(){return [...remotes.values()];},
     get id(){return me;},
@@ -86,9 +87,19 @@ export function createOnline(scene, onHit, onKO, options = {}) {
     get slot(){return assigned ? nextSlot : 0;},
     reportKO(to){const m={t:'ko',to,from:me};if(host)broadcast(m);else send(connections.get('host'),m);},
     damage(d, amount, source, yaw=lastYaw){if(!d?.id || d.dead)return; const m={t:'hit',to:d.id,from:me,amount,source,yaw}; if(host)broadcast(m);else send(connections.get('host'),m);},
-    update(dt, player, hook, kills, dead){
-      lastYaw=player.yaw;
-      for(const d of remotes.values()) {d.pos.lerp(d.target,Math.min(1,dt*15));d.group.position.copy(d.pos); d.visual?.update(dt,{velocity:d.vel,position:d.pos,target:new THREE.Vector3().fromArray(d.hookPoint||d.pos.toArray()),grounded:d.grounded,slide:d.slide,hook:d.hook,mantle:false,landing:false,whip:false,aim:new THREE.Vector3(-Math.sin(d.yaw||0),Math.sin(d.pitch||0),-Math.cos(d.yaw||0))});}
+    update(dt, player, hook, kills, dead, camera){
+      lastYaw=player.yaw; poseFrame++;
+      if(camera) camera.getWorldDirection(cameraDirection);
+      for(const d of remotes.values()) {
+        d.pos.lerp(d.target,Math.min(1,dt*15)); d.group.position.copy(d.pos);
+        d.poseDt=(d.poseDt||0)+dt;
+        const distance=camera ? cameraDelta.copy(d.pos).sub(camera.position) : null;
+        const interval=distance && distance.dot(cameraDirection)<0 ? 4 : distance && distance.lengthSq()>1600 ? 2 : 1;
+        if(d.visual && poseFrame%interval===0) {
+          d.visual.update(Math.min(.2,d.poseDt),{velocity:d.vel,position:d.pos,target:new THREE.Vector3().fromArray(d.hookPoint||d.pos.toArray()),grounded:d.grounded,slide:d.slide,hook:d.hook,mantle:false,landing:false,whip:false,aim:new THREE.Vector3(-Math.sin(d.yaw||0),Math.sin(d.pitch||0),-Math.cos(d.yaw||0))});
+          d.poseDt=0;
+        }
+      }
       lastSend+=dt;if(lastSend>.05){lastSend=0; const slot=host?1:nextSlot; const m={t:'state',id:me,slot,pos:player.pos.toArray(),vel:player.vel.toArray(),yaw:player.yaw,pitch:player.pitch,grounded:player.grounded,slide:player.slide,hook:hook.state,hookPoint:hook.point.toArray(),hp:player.hp,kills,dead,status:player.status,knockedHp:player.knockedHp};if(host)broadcast(m);else send(connections.get('host'),m); }
       scoreEl.textContent=teamMode ? `YOU: ${player.team === 'rockets' ? 'ROCKETS' : 'COMETS'}  ·  ${remotes.size+1} / 8 PLAYERS` : `YOU  ${Math.ceil(player.hp)} HP  ·  ${kills} KOs` + [...remotes.values()].sort((a,b)=>a.slot-b.slot).map(d=>`   |   P${d.slot} ${Math.ceil(d.hp||0)} HP · ${d.kills||0} KOs`).join('');
     },

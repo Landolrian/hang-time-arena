@@ -518,12 +518,12 @@ export function buildBowlRings(root) {
   spots.forEach(([x, z, col], i) => {
     const ringMesh = new THREE.Mesh(frostedRingGeometry(2.45, 0.95, 11 + i), frostMat(col));
     ringMesh.scale.set(1, 1, 0.95);
-    ringMesh.position.set(x, -2.4, z);
+    ringMesh.position.set(x, -0.3, z);
     ringMesh.userData.outline = 1.6;
     g.add(ringMesh);
     // milk caught in the hole + a splash collar where the ring meets the milk
     const fill = new THREE.Mesh(new THREE.CircleGeometry(1.55, 32), milkFill);
-    fill.position.set(x, -2.4, z);
+    fill.position.set(x, -0.3, z);
     g.add(fill);
     const back = fill.clone();
     back.rotation.y = Math.PI;
